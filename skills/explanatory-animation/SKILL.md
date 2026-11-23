@@ -3,7 +3,7 @@ name: explanatory-animation
 description: >-
   Design and build time-based explanatory animations, choreographed visual storytelling, and playback theater Web UIs (HTML/SVG/Canvas/CSS/JS) grounded in instructional animation cognitive science, Data Video design spaces, motion perception, and multimedia learning theory (Lowe & Boucheix APM, Shi et al., Amini et al., Heer & Robertson, Mayer CTML, Grant Sanderson / 3Blue1Brown).
   Use whenever the user asks to explain a complex concept, algorithm, math intuition, data flow, or system mechanism through timeline-driven motion, morphing, camera work, step-by-step playback, micro-pacing, Data Videos, or 3Blue1Brown/Manim-style animated explainers (e.g., "アニメーションで解説して", "動きで直観的に見せて", "3Blue1Brown風", "モーショングラフィックスで説明").
-  Do NOT use when the user wants a hands-on parameter-exploration lab, direct-manipulation sandbox, or static-first small multiples comparison without narrative playback; use interactive-explanation instead.
+  Do NOT use when the user wants a hands-on parameter-exploration lab, direct-manipulation sandbox, or static-first small multiples comparison without narrative playback; use interactive-explanation instead. For explaining Git Pull Requests, branch diffs, or code changes as a walkthrough animation, use pr-walkthrough-animation instead.
 ---
 
 # Explanatory Animation & Motion Storytelling Skill
