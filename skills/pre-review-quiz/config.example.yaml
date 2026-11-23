@@ -1,0 +1,24 @@
+# pre-review-quiz 設定ファイル雛形
+# 配置先の優先順位（上から順に探索）:
+#   1. 実行時のユーザー直接指定
+#   2. 環境変数 PRE_REVIEW_QUIZ_LOG_DIR（任意で PRE_REVIEW_QUIZ_FILENAME_TEMPLATE）
+#   3. リポジトリ内: .pre-review-quiz.yaml または .agents/pre-review-quiz.yaml
+#   4. ユーザーグローバル: ~/.config/pre-review-quiz/config.yaml
+
+# Obsidian Vault 内の保存先ディレクトリ（絶対パスまたは ~ 展開可能なパス）
+# 未設定の場合はクイズ終了時に保存先を尋ねるかスキップを選べます。
+# log_dir: "~/Documents/ObsidianVault/ReviewQuiz"
+
+# 保存ファイル名のテンプレート
+# 利用可能なプレースホルダー: {{date}}, {{type}}, {{id_or_slug}}, {{repo}}
+filename_template: "{{date}}_{{type}}-{{id_or_slug}}.md"
+
+# 終了時の保存挙動:
+#   ask  : 保存先を確認してから書き込む（未設定時はパス入力またはスキップを案内）
+#   auto : log_dir が設定済みなら確認なしで書き込む（既存ファイルがある場合は連番付与）
+#   skip : ファイル保存をデフォルトでスキップする
+save_behavior: ask
+
+# Frontmatter の tags に常に追加するベースタグ（# なし・小文字ケバブケース推奨）
+default_tags:
+  - review-quiz
