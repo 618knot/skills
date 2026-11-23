@@ -1,8 +1,9 @@
 ---
 name: interactive-explanation
 description: >-
-  Design and build interactive diagrams, Explorable Explanations, and visual concept simulations grounded in HCI, Information Visualization, and Cognitive Load Theory (Bret Victor, Ben Shneiderman, Edward Tufte, Barbara Tversky, John Sweller, Nicky Case, Bartosz Ciechanowski, Amit Patel).
-  Use this skill whenever the user asks to visually or interactively explain a complex concept, algorithm, mathematical model, physical/mechanical system, emergent simulation, or multi-variable trade-off, or when creating educational HTML/SVG/Canvas widgets and generative UI diagrams.
+  Design and build hands-on interactive diagrams, Explorable Explanations, and parameter-exploration laboratories grounded in HCI, Information Visualization, and Cognitive Load Theory (Bret Victor, Ben Shneiderman, Edward Tufte, Barbara Tversky, John Sweller, Nicky Case, Bartosz Ciechanowski, Amit Patel).
+  Use when the user wants a reader-driven sandbox, static-first small multiples, direct manipulation handles, sliders/scrubbable numbers, or interactive simulations to test hypotheses and explore multi-variable trade-offs or edge cases (e.g., "いじって理解できる図解", "パラメータを変えて試せるシミュレータ", "Explorable Explanation").
+  Do NOT use when the user asks for time-based narrative motion, choreographed playback/step-through animations, 3Blue1Brown/Manim-style visual storytelling, or Data Videos; use explanatory-animation instead.
 ---
 
 # Interactive Explanation & Diagram Design Skill
