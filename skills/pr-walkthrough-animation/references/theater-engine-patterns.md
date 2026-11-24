@@ -1,6 +1,6 @@
-# 【Layer 2】PR解説 2ペイン再生シアター 実装パターン集（ゼロ依存 HTML / SVG / CSS / JS）
+# 【Layer 2-A 専用】PR解説 2ペイン再生シアター 実装パターン集（ゼロ依存 HTML / SVG / CSS / JS）
 
-本ドキュメントは、Layer 1 で確定したストーリーボード仕様を、外部CDNなし（Tailwind の許可スクリプトのみ可）の自己完結型 HTML/SVG 再生シアターとして実装するための再利用可能なパターン集である。
+本ドキュメントは、Layer 1 で確定した 4ブロック中間ストーリーボード JSON のうち `semantic_core` ＋ `visual_directive` ＋ `adapter_silent_theater` を消費し、外部CDNなし（許可 Tailwind スクリプトのみ可）の自己完結型 HTML/SVG 再生シアター（Mode A）として実装するための再利用可能なパターン集である。
 
 ---
 
@@ -27,17 +27,24 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 function buildPrTimeline(beats) {
   let cursor = 0;
   const compiled = beats.map((b, index) => {
-    const phaseAMs = calcReadingDwellMs(b.caption, b.lang ?? 'ja');
-    const phaseBMs = Math.max(200, Math.min(400, b.timing?.cueMs ?? 300));
-    const phaseCMs = Math.max(500, Math.min(2000, b.timing?.motionMs ?? 1000));
-    // Core の山場・Risk ビートは最低 1800ms、通常ビートは最低 1000ms の定着ホールド
-    const minHold = (b.act === 'Risk' || b.isKeyBeat) ? 1800 : 1000;
-    const phaseDMs = Math.max(minHold, b.timing?.holdMs ?? (b.act === 'Risk' ? 2000 : 1300));
-    const phaseEMs = Math.max(40, b.timing?.boundaryMs ?? 60);
+    const adapter = b.adapter_silent_theater ?? {};
+    const phase = b.semantic_core?.phase ?? b.act ?? 'code_focus';
+    const caption = adapter.caption ?? b.caption ?? '';
+    const phaseAMs = calcReadingDwellMs(caption, b.lang ?? 'ja');
+    const phaseBMs = Math.max(200, Math.min(400, adapter.cue_ms ?? b.timing?.cueMs ?? 300));
+    const phaseCMs = Math.max(500, Math.min(2000, adapter.motion_ms ?? b.timing?.motionMs ?? 1000));
+    // 6フェーズ対応: Risk・重要ビートは >= 1800ms、最終 Summary は 1500–2000ms、通常ビートは >= 1000ms の定着ホールド
+    const isRiskOrKey = phase === 'risk_audit' || phase === 'Risk' || b.isKeyBeat;
+    const isSummary = phase === 'summary' || phase === 'Summary';
+    const minHold = isRiskOrKey ? 1800 : isSummary ? 1500 : 1000;
+    const defaultHold = isRiskOrKey ? 2000 : isSummary ? 1800 : 1300;
+    const phaseDMs = Math.max(minHold, adapter.hold_ms ?? b.timing?.holdMs ?? defaultHold);
+    const phaseEMs = Math.max(40, adapter.boundary_ms ?? b.timing?.boundaryMs ?? 60);
     const totalMs = phaseAMs + phaseBMs + phaseCMs + phaseDMs + phaseEMs;
 
     const entry = {
       ...b,
+      caption,
       index,
       startMs: cursor,
       endMs: cursor + totalMs,
@@ -124,7 +131,8 @@ function renderCodePane(codeSpec, motionT, cueT) {
   const lines = codeSpec.lines.slice(0, 12);
 
   const rowsHtml = lines.map((line) => {
-    const keyAttr = line.dataKey ? `data-key="${line.dataKey}"` : '';
+    const keyVal = line.data_key ?? line.dataKey;
+    const keyAttr = keyVal ? `data-key="${keyVal}"` : '';
     let borderClass = 'border-transparent';
     let bgClass = '';
     let opacity = 1;
@@ -159,12 +167,28 @@ function renderCodePane(codeSpec, motionT, cueT) {
     `;
   }).join('');
 
+  const lineRange = codeSpec.line_range ?? codeSpec.lineRange ?? '';
   return `
     <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-[var(--border)] bg-[var(--secondary)]/50 text-xs">
       <span class="font-mono font-semibold truncate">${escapeHtml(codeSpec.file)}</span>
-      <span class="font-mono px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] shrink-0">${escapeHtml(codeSpec.lineRange)}</span>
+      <span class="font-mono px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] shrink-0">${escapeHtml(lineRange)}</span>
     </div>
     <div class="py-1.5 overflow-x-auto">${rowsHtml}</div>
+  `;
+}
+
+/**
+ * Baum Principle 5 対応: 関連する2変更点（呼び出し元と呼び出し先、類似箇所2ファイル等）を同一画面に左右同時表示する
+ */
+function renderSplitCodePanes(codeStates, motionT, cueT) {
+  if (!Array.isArray(codeStates) || codeStates.length < 2) {
+    return renderCodePane(codeStates?.[0], motionT, cueT);
+  }
+  return `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div class="border border-[var(--border)] rounded-lg overflow-hidden">${renderCodePane(codeStates[0], motionT, cueT)}</div>
+      <div class="border border-[var(--border)] rounded-lg overflow-hidden">${renderCodePane(codeStates[1], motionT, cueT)}</div>
+    </div>
   `;
 }
 ```

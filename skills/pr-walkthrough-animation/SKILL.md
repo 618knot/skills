@@ -1,100 +1,108 @@
 ---
 name: pr-walkthrough-animation
 description: >-
-  Design and build animated visual walkthroughs and playback theater Web UIs (HTML/SVG/CSS/JS) that explain Git Pull Requests, branch diffs, and uncommitted code changes for rapid self-comprehension. Combines code-change comprehension (BLUF top-down order, semantic change clustering, surrounding-context verification, risk & AI-pitfall auditing) with choreographed animation principles (silent-web micro-pacing, MOT tracking limit, diagram-to-code focus sync, deterministic timeline controls).
-  Use whenever the user asks to explain a PR, git diff, or branch changes through an animated walkthrough or visual movie/theater (e.g., "PRの内容を解説する動画を作って", "このPRをアニメーションで解説して", "ブランチの差分を動きで理解したい", "PRのウォークスルーアニメを作って").
+  Design and build animated visual walkthroughs that explain Git Pull Requests, branch diffs, and uncommitted code changes either as a silent interactive playback theater Web UI (Mode A, default: HTML/SVG/CSS/JS) or as a narrated MP4/WebM walkthrough video with WebVTT subtitles (Mode B: Audio-First Remotion or Playwright+FFmpeg). Grounded in code-change comprehension research (Bacchelli & Bird, Tao, Barnett, Baum), multimedia learning theory (Mayer CTML), and choreographed animation principles.
+  Use whenever the user asks to explain a PR, git diff, or branch changes through an animated walkthrough, movie, or narrated video (e.g., "PRの内容を解説する動画を作って", "このPRをアニメーションで解説して", "音声付きPR解説動画を作って", "MP4でPR解説を作って", "ブランチの差分を動きで理解したい").
   Do NOT use for general conceptual/math/algorithm animations unrelated to a repository diff (use explanatory-animation), hands-on parameter sandboxes (use interactive-explanation), or interactive comprehension quizzes (use pre-review-quiz).
 ---
 
 # PR Walkthrough Animation Skill
 
-Git の Pull Request・ブランチ差分・未コミット変更を対象に、**「生 diff を上から読む苦痛」を排し、変更の全体像・Before/After の実行フロー・核心コード抜粋・隠れたリスクを時間軸のアニメーションで一気に頭へ入れる**ための解説シアター Web UI 設計・実装スキル。
+Git の Pull Request・ブランチ差分・未コミット変更を自律解析し、**「生 diff の丸映し」を排して、変更理由（Why）・構造変化・核心コード・破壊リスク／類似箇所への波及を短時間で頭に入れる解説アニメーション**を設計・生成するスキル。
 
-- **想定ユースケース**：自分がレビューする PR、AI に実装させた PR、規模の大きいブランチ差分の構造と副作用を短時間で正確に把握する（理解の抜けをテストしたい場合は、本スキル視聴後に `pre-review-quiz` を併用する）。
-- **2層分離アーキテクチャ（将来の MP4 / Remotion / 音声対応を見据えた設計）**：
-  - **Layer 1（PR解析 ＆ 変更ストーリーボード設計・出力非依存）**：PR差分取得・周辺ファイル裏取り・意味的クラスタリング・BLUF 5幕ストーリーボード JSON の策定。
-  - **Layer 2（レンダリング出力・現在は HTML/SVG 再生シアター）**：Layer 1 のストーリーボードを入力として、無音Web環境向けの決定論的 HTML/SVG 再生シアターを描画する（将来 Remotion / MP4＋TTS レンダラへ差し替え可能）。
+- **出力モード選択（Mode A デフォルト / Mode B 拡張）**：
+  - **Mode A（無音 HTML/SVG 再生シアター・デフォルト）**: チャット内プレビューやブラウザ即時確認向け。`generative_ui` 環境で外部CDNなし（許可 Tailwind のみ）で即動作。
+  - **Mode B（音声ナレーション付き MP4/WebM＋WebVTT 動画）**: ユーザーが「MP4」「動画ファイル」「音声付き」「Remotion」「GitHub PR に貼る動画」等を明示した際に選択。Audio-First で確定フレームをレンダリングする。
+- **2層分離アーキテクチャ**：**Layer 1（PR解析・意味的クラスタリング・4ブロック中間ストーリーボード JSON）** を共通土台とし、**Layer 2-A（無音シアター）** または **Layer 2-B（Audio-First 動画）** を独立出力する。
 
 > [!IMPORTANT]
-> **Antigravity（`generative_ui`）環境で HTML/SVG 出力する際の必須制約**
-> 1. **外部CDN禁止（CSP制約）**: 許可された Tailwind スクリプト（`https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js`）以外の外部ライブラリ（GSAP / Shiki / D3 等）は読み込めない。タイムライン・コード差分ハイライト・SVGフローアニメーションはすべて**ゼロ依存のインライン HTML/SVG/CSS/JS**で実装する。
-> 2. **テーマ変数とライト/ダーク両対応**: `bg-[var(--card)]`, `text-[var(--foreground)]`, `text-[var(--muted-foreground)]`, `border-[var(--border)]`, `--primary` 等のセマンティックトークンを用い、`:root` への独自色フォールバックやハードコード色（`bg-slate-900`, `text-white` 等）を避ける。最小フォントサイズは `12px`（`text-xs`）以上を厳守する。
-> 3. **配置の判断（スタンドアロン優先）**: PRウォークスルーは左（実行フローSVG）＋右（核心コード8〜12行）の2ペイン＋操作バーを要するため、**原則スタンドアロンアーティファクト（`bg-[var(--background)]`）**として出力する（`UserFacing: true`）。超小型PRで高さ `<= 450px` に収まる場合のみインライン埋め込み（`<agent-embed>`、`h-screen`/`100vh` 禁止）を検討する。
+> **Mode A（Antigravity `generative_ui`）出力時の必須制約**
+> 1. **外部CDN禁止（CSP制約）**: 許可された Tailwind スクリプト（`https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js`）以外は読み込めない。すべてゼロ依存の HTML/SVG/CSS/JS で実装する。
+> 2. **テーマ変数と視認性**: `bg-[var(--card)]`, `text-[var(--foreground)]`, `text-[var(--muted-foreground)]`, `border-[var(--border)]`, `--primary` 等を使い、`:root` への独自色フォールバックやハードコード色を避ける。最小フォントは `12px`（`text-xs`）以上。
+> 3. **配置**: 原則スタンドアロンアーティファクト（`bg-[var(--background)]`, `UserFacing: true`）として出力する。超小型PRで高さ `<= 450px` に収まる場合のみ `<agent-embed>`（`h-screen`/`100vh` 禁止）を検討する。
 
 ---
 
 ## 1. 4つの基本原則（Core Pillars）
 
-1. **結論先行・実行順のトップダウン構成（BLUF & Dependency Order）**
-   - 抽象概念の解説（3Blue1Brown 型の焦らし・ミステリー順）とは異なり、PR 解説では**冒頭ビートで結論（目的・変更点・影響範囲・不変条件）を即座に提示する（BLUF）**。
-   - Git のファイル名アルファベット順に並べず、**実行経路・依存関係のストーリー順（Entry Point → コアロジック → データ/副作用 → テスト）**へ再構成する（Baum et al., 2019; Barnett et al., 2015）。
-2. **生 diff 丸映しの禁止と「図 × 抜粋コード」の空間統合（Diagram-Code Sync）**
-   - 画面いっぱいの unified diff は文字が小さく読めないため全面禁止する。
-   - **左：抽象アーキテクチャ／実行フロー SVG（Before → After の経路変化）** と **右：核心コード抜粋（1画面最大 8〜12行、変更箇所の Magic Move 風ハイライト・周辺ディミング）** を並置し、共通 `data-key` による双方向ハイライトと **`path/to/file.ext:L42-L51` の行番号バッジ** を常時表示する。
-3. **diff 単体推測の禁止とリスク・盲点の明示（Grounded Verification & Risk幕）**
-   - diff 断片だけから挙動を推測せず、呼び出し元・型定義・テスト・スキーマ等の周辺 1〜4ファイルを必ず実読して裏取りする。
-   - 正常系だけでなく、**第4幕を「境界条件・高リスク箇所・AI生成コード特有の落とし穴」専用幕**として必ず確保し、見落としを防ぐ。
-4. **無音Webマイクロペーシングと決定論的シアター制御（Silent-Web Theater）**
-   - `explanatory-animation` の実証ルールを継承し、**Phase A（読解静止・日本語 `4.0 CPS` / 英語 `17 CPS` 自動計算）→ Phase B（視線誘導・ディミング `200–400 ms`）→ Phase C（主動作 `800–1250 ms`・MOT上限 `<= 4`）→ Phase D（定着ホールド `1000–2500 ms`）→ Phase E（ビート境界）** の排他タイムラインで「読む」と「見る」の衝突を防ぐ。
-   - `setTimeout` 連鎖を禁じ、単一時刻状態 `tMs` から描画する純粋関数 `render(state)` と、再生/一時停止・1ビート戻し/送り・再再生・幕マーカー付きシーク・速度変更（`0.5x–2.0x`）・手動ステップ切替・`prefers-reduced-motion` 対応を標準実装する。
+1. **BLUF-then-Causal-Narrative と複合変更の分解**
+   - 冒頭 `10–15秒` で変更理由（Tao I-1）と破壊リスク・影響範囲（I-9）を BLUF で即答し、本編は「課題 → 設計 → コード変形 → リスク検証」の因果ナラティブへ接続する（Wise et al., 2009; Emde et al., 2016）。
+   - 約42%のPRは複合変更を含むため（Barnett et al., 2015）、lockfile 等のノイズを除き**最大3関心事クラスタ**へ事前分解する（Dias et al., 2015）。
+2. **依存順配列＋同一画面同時表示（Baum Principle 1, 5, 6）**
+   - Git のファイル名アルファベット順を厳禁とし、呼び出し・データフロー依存順に並べ替えて順序規則を冒頭明示する（Baum et al., 2017）。ただし順序変更単独の効果には限界があるため（Baum et al., 2019 の留保）、**関連2箇所や Before/After を同一フレームに同時表示（Principle 5）**し、生 diff ではなく抜粋コード（Mode A $\le 12$行、Mode B 10–15行推奨・上限18行・1行 $\le 80$文字）で示す。
+3. **diff 単体推測禁止と「Why・リスク・類似箇所（I-10）」の開示**
+   - 周辺 1〜4ファイルを必ず実読して裏取りする。構文の逐語朗読（`3行目でxを+1`）を禁じ、**なぜその設計を選び別案を採らなかったか**（Bacchelli & Bird, 2013; MacLeod et al., 2015）と、高リスク・AI生成落とし穴・**類似箇所への一貫性（Tao I-10）**を必ず独立フェーズで扱う。
+4. **出力モードに応じた認知チャネル最適化**
+   - **Mode A（無音）**: 視覚チャネル競合を防ぐ 5フェーズ排他タイムライン（Phase A 日本語 `4.0 CPS`/英語 `17 CPS` 読解静止 → B 誘導 `200–400 ms` → C 主動作 `800–1250 ms`・MOT `<= 4` → D 定着 `1000–2500 ms` → E 境界）＋決定論的 `render(state)`。
+   - **Mode B（音声付き）**: 聴覚（Why）と視覚（What/Where）の時間的近接並列（$d=1.31$）。音声先行 `45 ms` 厳禁（視覚 `50–100 ms` 先行: ITU-R BT.1359-1）、長文テロップ焼き込み禁止（2–3語ラベル＋分離 WebVTT）、Audio-First（TTS先生成→実尺からフレーム逆算）、標準尺 `60–180秒`（厳格上限 `300秒`: Guo et al., 2014）、GitHub 互換 `H.264 yuv420p`・`9.5 MB` 以下。
 
 ---
 
-## 2. トップダウン 5幕構成（BLUF Walkthrough Arc）
+## 2. 6フェーズ標準構成（BLUF ＋ 因果ナラティブ・標準 60–180秒 / 上限 300秒）
 
-PR の規模に応じて **5幕・6〜9ビート**（全体再生目安 60〜150秒）に分解する。軽微・自明な差分（20行未満の typo/コメント/フォーマット修正のみ）の場合は、無理にフルアニメ化せず「軽微なためテキスト要約で十分か、3ビート簡易版にするか」を先に1行確認する。
+軽微・自明な差分（20行未満で分岐・状態変更なし）はフル構成にせず「テキスト要約でよいか・3ビート簡易版にするか」を先に1行確認する。
 
-| 幕 | 尺目安（ビート数） | 認知的役割 | 必須要素 |
+| フェーズ | 尺目安 | 構成上の役割 | コード行数上限（Mode B / Mode A） |
 | :--- | :--- | :--- | :--- |
-| **第1幕：TL;DR & Blast Radius** | 10–15%（1ビート） | 結論と影響範囲の地図（BLUF） | 変更目的（Why）1文、変更対象モジュール俯瞰図、**変えてはいけない不変条件（Invariant）** の明示 |
-| **第2幕：Before / Context** | 15–20%（1–2ビート） | 変更前の挙動と課題の共有 | 変更前の実行フロー・バグ再現経路・既存拡張ポイント（この状態を後続幕の残像基準にする） |
-| **第3幕：Core Flow & Code Focus** | 35–40%（2–4ビート） | 実行順の Before → After 解説 | 依存/実行順に 1責務＝1ビートで展開。左フロー図の Progressive Path 変化と右コード抜粋（$\le 12$行）を同期 |
-| **第4幕：Edge Cases & Risk Audit** | 15–20%（1–2ビート） | 自分の見落とし・副作用の点検 | 高リスク要素（DB/認可/非同期/例外処理/新規依存/テスト期待値変更）と異常系パスを赤/アンバーで強調 |
-| **第5幕：Test Coverage & Summary** | 10–15%（1ビート） | 検証範囲の把握と再確認ハブ | 追加/変更テストのカバー範囲、変更ファイル＋行番号サマリー一覧、任意ビートへ即ジャンプできる静止俯瞰状態 |
+| **① TL;DR・影響範囲（BLUF）** | 10–15秒 | 目的（Why）・結論・影響マップ・不変条件・リスクバッジの即時提示（ミュート冒頭完結） | 0行（要約カード最大3項目） |
+| **② Before 文脈** | 15–25秒 | 既存構造の制約・バグ再現パス・課題の共有（後続フェーズの残像基準） | 原則 0行（必要時 5–8行） |
+| **③ コア変更フロー（抽象図）** | 20–40秒 | 変更前後のアーキテクチャ／データフロー変形（新規強調ノード `<= 4` 個） | 0行（2–3語ラベル近接配置） |
+| **④ コード抜粋変形（Focus+Context）** | 30–70秒 | 依存順に 1クラスタ/ビートで Before→After 変形・`file:line` バッジ・関連2箇所分割 | Mode B: 10–15行（上限18行）／Mode A: $\le 12$行 |
+| **⑤ エッジケース・リスク・類似箇所（I-9/I-10）** | 15–30秒 | DB/認可/非同期/テスト書換/AI生成落とし穴と類似箇所への波及確認 | 6–10行上限＋リスク種別バッジ |
+| **⑥ テスト・検証・まとめ** | 10–20秒 | テスト網羅・UI Before/After・確認してほしい論点・末尾 `1.5–2.0秒` 静止ホールド | 核心アサーション 5–8行 または 表最大4行 |
 
 ---
 
 ## 3. 必須制作パイプライン（5-Stage Workflow）
 
-いきなり HTML コード生成（Stage 4）を始めず、必ず **Layer 1（Stage 1〜2）→ Layer 2（Stage 3〜5）** の順で進める。
+### Layer 1（Mode A / B 共通）
 
-### Layer 1：PR解析 ＆ 出力非依存ストーリーボード設計
+1. **Stage 1：PR解析・裏取り・意味的クラスタリング**
+   - 👉 [references/pr-analysis-and-storyboard.md](./references/pr-analysis-and-storyboard.md) を読み込み、PR/ブランチ差分を取得してノイズを除外、周辺 1〜4ファイルを実読して裏取りする。
+   - 変更を**最大3関心事クラスタ**かつ依存順へ配列し、PRタイプ5分類（`feature` / `bugfix` / `refactor` / `architecture` / `ui`）と高リスク・Tao I-10 箇所を特定する。
+2. **Stage 2：4ブロック・フォーマット非依存ストーリーボード JSON 策定**
+   - `semantic_core` / `visual_directive` / `adapter_silent_theater` / `adapter_narrated_video` の4ブロック構造でビートを設計する（UI変更PRは隔離 `git worktree`＋Playwright実画面録画を計画）。
+   - 👉 [references/code-visual-patterns.md](./references/code-visual-patterns.md) を読み込み、PRタイプ別比率・1080p視認性・10大Gotchas回避を設計へ反映する。
 
-1. **Stage 1：PR / ブランチ差分の取得・裏取り・リスク診断**
-   - 👉 [references/pr-analysis-and-storyboard.md](./references/pr-analysis-and-storyboard.md) に従い、PR（`gh pr view` / `gh pr diff`）またはローカルブランチ差分（`git diff <base>...HEAD`）を取得し、ノイズ差分を除外する。
-   - 変更の呼び出し元・関連テスト・スキーマ・設計文書（1〜4ファイル）を実際に読み込んで裏取りし、**PRタイプ（Bugfix / Feature / Refactor / Architecture / UI）**と**高リスク・AI生成の落とし穴**を特定する。
-2. **Stage 2：意味的クラスタリング ＆ ストーリーボード仕様確定**
-   - 変更をファイル名順ではなく**実行順・依存順**にクラスタリングし、第1幕〜第5幕（6〜9ビート）の**出力非依存ストーリーボード構造**（各ビートの `act`, `focusFiles`, `diagramState`, `codeSnippet`, `riskTag`, `caption`）を確定する。
-   - 各ビートのキャプションは **最大2行（日本語 $\le 32$ 全角文字、理想 10〜20文字／英語 $\le 84$ 文字）** に圧縮する。
+### Layer 2（Mode A / Mode B 分岐）
 
-### Layer 2：ビジュアル振付 ＆ 再生シアターUI実装
+- **Mode A（無音 HTML/SVG 再生シアター：デフォルト）を選択した場合**:
+  3. **Stage 3A**：`adapter_silent_theater` のキャプション（最大2行・日本語 $\le 32$文字）と無音5フェーズ時間（ms）を確定する。
+  4. **Stage 4A**：👉 [references/theater-engine-patterns.md](./references/theater-engine-patterns.md) のみを読み込み、ゼロ依存 2ペイン再生シアター（左：SVGフロー＋Before残像、右：抜粋コード $\le 12$行＋`file:line` バッジ、`data-key` 連動、再生・1ビート戻し/送り・速度・`prefers-reduced-motion`）を実装する。
+  5. **Stage 5A**：第4節の **共通ゲート + Mode A ゲート** で自己監査して出力する。
 
-3. **Stage 3：PRタイプ別ビジュアル設計とマイクロペーシング確定**
-   - 👉 [references/code-visual-patterns.md](./references/code-visual-patterns.md) を参照し、PRタイプに応じた図解パターン、各ビートの `enter` / `update` / `exit` オブジェクト対応表、コード抜粋（$\le 12$行）、`data-key` マッピング、Phase A〜E の時間（ms）と同時稼働数（`<= 4`）を確定する。
-4. **Stage 4：決定論的 2ペイン再生シアター HTML/SVG の実装**
-   - 👉 [references/theater-engine-patterns.md](./references/theater-engine-patterns.md) を参照し、ゼロ依存 HTML/SVG/CSS/JS で2ペイン再生シアター（左：実行フローSVG＋Before残像、右：抜粋コード＋`file:line` バッジ＋Before/Afterトグル、下部：固定キャプション＋操作バー）を実装する。
-5. **Stage 5：出力前 8項目自己監査ゲート（Self-Audit Gate）**
-   - 出力直前に第4節の8項目チェックリストを全件検証し、1項目でも違反があれば修正してから提示する。
+- **Mode B（音声ナレーション付き MP4/WebM 動画）を選択した場合**:
+  3. **Stage 3B**：👉 [references/narrated-video-pipeline.md](./references/narrated-video-pipeline.md) のみを読み込み、`adapter_narrated_video` へ話し言葉TTS原稿（記号・生パス除去、日本語 `270–320`文字/分・英語 `160–185 WPM`）を記述し、ビート単位で TTS 音声＋タイムスタンプを先生成して Audio-First 尺を確定する（300秒超なら Stage 2 へ差し戻し圧縮）。
+  4. **Stage 4B**：Remotion（または仮想クロック HTML＋Playwright）で実測音声尺からフレーム数（`30 fps`）を算出し、発話語の `50–100 ms` 先行でハイライト・Magic Move を同期レンダリングして `.vtt` 字幕を同時出力する。
+  5. **Stage 5B**：FFmpeg で `libx264 (yuv420p, -g 60, +faststart)` ＋ `AAC 96k (-14 LUFS)` へエンコード（`9.5 MB` 超過時は CRF引き上げ→720p 自動フォールバック）、代表フレームの視覚検査と `ffprobe` を通し、第4節の **共通ゲート + Mode B ゲート** を全通させて納品する。
 
 ---
 
-## 4. 出力前 8項目自己監査チェックリスト（Self-Audit Gate）
+## 4. 出力前 自己監査チェックリスト（Binary Audit Gate）
 
-👉 **各項目に対応するPR解説特有のアンチパターン（Gotchas #1–#8）と修正基準の詳細は [references/code-visual-patterns.md](./references/code-visual-patterns.md) を参照。**
+### 共通ゲート（Mode A / B 必須）
+- [ ] **共通1（BLUF＆因果・尺）**: 冒頭 `10–15秒`（第1ビート）で変更目的・結論・影響範囲・不変条件を完結提示し、全体が目標尺（標準 `60–180秒`・上限 `300秒`）に収まっているか。
+- [ ] **共通2（依存順＆同時提示）**: ファイル名順ではなく依存・意味クラスタ順（$\le 3$ 関心事）に並び、関連変更や Before/After が同一画面で比較可能（180°ルール・Before残像維持）か。
+- [ ] **共通3（裏取り＆生diff禁止）**: 周辺 1〜4ファイル実読に基づく正確な `file:line` を示し、生 diff や 19行以上のコード詰め込み・`Why` を語らない逐語実況を排除したか。
+- [ ] **共通4（リスク＆類似箇所）**: 高リスク変更・AI生成落とし穴・**類似箇所への一貫性（Tao I-10）**をフェーズ⑤で漏れなく点検したか。
 
-- [ ] **監査1（BLUF と実行順）**: 第1幕で結論（Why / What / 影響範囲・不変条件）を先に示しているか？ 第3幕はファイル名アルファベット順ではなく実行経路・依存順になっているか？
-- [ ] **監査2（裏取りと根拠の正確性）**: diff 単体の推測ではなく周辺ファイルを実読したか？ すべてのコード抜粋に正確な `ファイルパス:行番号` バッジが付いており、実コードと一致しているか？
-- [ ] **監査3（生 diff 禁止と抜粋上限）**: 1ビートあたりの表示コードが **12行以下** に絞られ、変更・注目行以外がディミングされているか？ 巨大な unified diff を丸映ししていないか？
-- [ ] **監査4（リスク・異常系の明示）**: 第4幕に境界条件・副作用・高リスク要素（または AI 生成コードの落とし穴）の検証ビートが含まれているか？（該当リスクゼロの純粋リファクタでも不変条件の検証を置いているか？）
-- [ ] **監査5（無音同期と字幕制約）**: 全ビートで Phase A（文字数と日本語 `4 CPS` / 英語 `17 CPS` から算出した読解静止時間）完了前に主要モーションが発火していないか？ キャプションは最大2行・上限文字数以内か？
-- [ ] **監査6（Staging・追跡上限・180°ルール）**: 同時独立移動が **4個以下**（理想 1〜2個）か？ 非関連ノードのディミング（`0.15–0.25`）があり、Before/After 間でノード配置が左右反転していないか？
-- [ ] **監査7（間・イージング・残像）**: 位置・カメラ移動に `linear` が残っていないか？ 全ビート末に `>= 1000 ms`（重要ビート `>= 1800 ms`）の定着ホールドがあり、Before の状態が残像（Trace/History）として比較可能か？
-- [ ] **監査8（決定論制御とアクセシビリティ）**: 任意のビートへシーク・巻き戻ししても図・コード・行番号バッジの同期が崩れないか？ `prefers-reduced-motion` 自動検知＋手動トグルで動きを止めても解説が完全に成立するか？
+### Mode A 追加ゲート（無音 HTML/SVG シアター）
+- [ ] **A1（無音同期）**: 日本語 `4.0 CPS`/英語 `17 CPS` の Phase A 読解静止完了前にモーションが発火せず、キャプションは2行・上限文字数以内か。
+- [ ] **A2（抜粋上限）**: 右ペインのコードが `12行以下`、非注目行ディミング済みで、`data-key` 連動と `file:line` バッジが揃っているか。
+- [ ] **A3（MOT＆間）**: 同時独立移動が `4個以下`、`linear` イージング禁止、各ビート末に `>= 1000 ms`（重要ビート `>= 1800 ms`）の定着ホールドがあるか。
+- [ ] **A4（決定論＆アクセシビリティ）**: シーク・1ビート戻し/送りで状態同期が破綻せず、`prefers-reduced-motion` 自動検知＋手動トグルで成立するか。
+
+### Mode B 追加ゲート（音声付き MP4/WebM 動画）
+- [ ] **B1（TTS原稿適正）**: 話し言葉中心で `Why`/トレードオフを語り、記号（`< > &`）・生パス・未展開識別子・句読点連打ポーズを含んでいないか。
+- [ ] **B2（Redundancy排除）**: 音声と同一の長文テロップを画面に焼き込まず、2–3語アンカーラベル＋分離 `.vtt` 字幕（かつ冒頭5–10秒はミュート完結）になっているか。
+- [ ] **B3（Audio-First同期）**: 全ビートのフレーム数が実測TTS尺＋ポーズから算出され、音声先行（`> 45 ms` 厳禁）がなく視覚変化が `0–100 ms` 先行しているか。
+- [ ] **B4（可読性＆配信仕様）**: コード `28–32 px`・行間1.5倍・`<= 18行`・`<= 80文字/行`・コントラスト `>= 4.5:1`、代表フレーム視覚検査で重なりゼロ、`ffprobe` で `h264 / yuv420p / 30fps / +faststart / aac (-14 LUFS)` かつ **`<= 9.5 MB`** を満たすか。
 
 ---
 
 ## 5. リファレンス一覧（Progressive Disclosure）
 
-- **[references/pr-analysis-and-storyboard.md](./references/pr-analysis-and-storyboard.md)**: 【Layer 1】PR/ブランチ差分取得コマンド、ノイズ除外・周辺ファイル裏取り規則、高リスク＆AI生成コード落とし穴検知、PRタイプ5分類、意味的クラスタリング手順、将来の MP4/Remotion 化でも再利用できる出力非依存ストーリーボード JSON スキーマ。
-- **[references/code-visual-patterns.md](./references/code-visual-patterns.md)**: 【Layer 2】PRタイプ別ビジュアル演出テンプレート、図解×コード抜粋（$\le 12$行）の空間統合ルール、Magic Move 風差分ハイライト規約、PR解説アニメ特有の8大アンチパターン（Gotchas #1–#8）と MUST/NEVER 制約。
-- **[references/theater-engine-patterns.md](./references/theater-engine-patterns.md)**: 【Layer 2】ゼロ依存 HTML/SVG/CSS/JS の2ペイン再生シアター実装パターン（CPS自動算出・決定論的タイムラインエンジン、SVGフロー×抜粋コード×`file:line` バッジ同期、`data-key` 双方向ハイライト、Before残像切替、`prefers-reduced-motion` 対応、`generative_ui` テンプレート）。
+- **[references/pr-analysis-and-storyboard.md](./references/pr-analysis-and-storyboard.md)**: 【Layer 1 共通】一次文献エビデンスマップ＆留保、PR/ブランチ解析、ノイズ除外・裏取り、クラスタリング手順、PRタイプ別比率表、4ブロック中間ストーリーボード JSON 仕様。
+- **[references/code-visual-patterns.md](./references/code-visual-patterns.md)**: 【Layer 2 共通】6フェーズ別ビジュアル語彙・1080p画素可読性基準、Focus+Context・Magic Move・分割比較、PRタイプ別演出表、10大アンチパターン（Gotchas #1–#10）。
+- **[references/theater-engine-patterns.md](./references/theater-engine-patterns.md)**: 【Mode A 専用】無音5フェーズ決定論エンジン、2ペイン／分割コード表示、Progressive Path＆残像、`generative_ui` テンプレート。
+- **[references/narrated-video-pipeline.md](./references/narrated-video-pipeline.md)**: 【Mode B 専用】CTML原則反転、TTS脚本・話速・SSML規約、動画生成4スタック選定（Remotion / Playwright+FFmpeg 等）、ElevenLabs/VOICEVOX/WhisperX Audio-First同期、H.264/9.5MBエンコード自動化・視覚検査ガイド。
