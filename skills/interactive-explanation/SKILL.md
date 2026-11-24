@@ -11,7 +11,10 @@ description: >-
 複雑な概念・アルゴリズム・数理モデル・物理/工学システム・多変数トレードオフを解説する際、「何でもアニメーションや多変数サンドボックスにする」という素朴なアプローチを排し、HCI・情報可視化・認知負荷理論（CLT）の一次文献に基づく**メンタルモデル構築を最大化するインタラクティブ図解・UI**を設計・実装するためのスキル。
 
 > [!IMPORTANT]
-> Antigravity環境でインラインまたはスタンドアロンのHTMLウィジェットとして出力する場合は、必ず `generative_ui` スキルのテーマ変数規約（`bg-[var(--card)]`, `text-[var(--foreground)]`, Tailwind script等）を併用すること。
+> **マルチ環境互換（Claude Artifacts / Claude Code / Antigravity）HTML/SVG/Canvas 出力の必須制約**
+> 1. **完全ゼロ依存・外部CDN禁止（CSP互換）**: Tailwind CDN や外部ライブラリを含む外部 `<script>` / `<link>` を一切読み込まず、単一 `.html` 内の**標準 `<style>`（Vanilla CSS）＋インライン SVG/Canvas/JS** で実装する。
+> 2. **セマンティックテーマ変数**: `--ui-*` エイリアス変数（ホスト注入の `--background`, `--card`, `--foreground`, `--muted-foreground`, `--border`, `--primary` 等があれば優先継承し、未定義環境では `color-scheme: light dark` + `light-dark(...)` で自動適応）を用いる。ホスト変数を上書きしないよう `:root` で `--card` 等自体を再定義しないこと。
+> 3. **ホスト環境別の出力・配置**: Claude 環境（Artifacts / ローカル HTML）・一般ブラウザでは自己完結 HTML（トップレベルの `100vh` / `height: 100%` 依存禁止）として出力する。Antigravity 環境で `generative_ui` スキルが利用可能な場合は、同スキルの配置規則（`<= 450px` インライン `<agent-embed>` / スタンドアロン）および `<canvas>` の `themechange` 再描画規約に従う。
 
 ---
 
@@ -137,4 +140,4 @@ UI・コード実装時は以下の5つの技術規則を厳守する。
 
 - **[references/topic-patterns-and-triage.md](./references/topic-patterns-and-triage.md)**: 表現トリアージの詳細基準、10種類の対象トピック構造×操作パターン×視覚フィードバック完全対応表、および一次文献（Victor, Shneiderman, Tufte, Tversky, Sweller, Case, Ciechanowski, Patel）の核心理論。
 - **[references/anti-patterns-and-audit.md](./references/anti-patterns-and-audit.md)**: AIが陥りやすい10大アンチパターン（Gotchas）の認知科学的敗因、定量的エビデンス（Robertson 2008, Mayer & Moreno 2003）、および具体的なリファクタリング規則。
-- **[references/implementation-patterns.md](./references/implementation-patterns.md)**: インタラクティブ図解を実装するための再利用可能な HTML/CSS/JS 設計パターン集（`data-key` 双方向ハイライト、Scrubbable Numbers、Canvas+SVG直接操作ハンドル、Rung 0↔1 抽象化の梯子連動、Place Your Bets 予測ゲート）。
+- **[references/implementation-patterns.md](./references/implementation-patterns.md)**: インタラクティブ図解を実装するための再利用可能なゼロ依存 Vanilla CSS / HTML / JS 設計パターン集（マルチ環境テーマ変数トークン、`data-key` 双方向ハイライト、Scrubbable Numbers、Canvas+SVG直接操作ハンドル、Rung 0↔1 抽象化の梯子連動、Place Your Bets 予測ゲート）。

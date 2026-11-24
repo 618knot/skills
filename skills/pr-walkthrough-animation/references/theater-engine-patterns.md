@@ -1,6 +1,6 @@
 # 【Layer 2-A 専用】PR解説 2ペイン再生シアター 実装パターン集（ゼロ依存 HTML / SVG / CSS / JS）
 
-本ドキュメントは、Layer 1 で確定した 4ブロック中間ストーリーボード JSON のうち `semantic_core` ＋ `visual_directive` ＋ `adapter_silent_theater` を消費し、外部CDNなし（許可 Tailwind スクリプトのみ可）の自己完結型 HTML/SVG 再生シアター（Mode A）として実装するための再利用可能なパターン集である。
+本ドキュメントは、Layer 1 で確定した 4ブロック中間ストーリーボード JSON のうち `semantic_core` ＋ `visual_directive` ＋ `adapter_silent_theater` を消費し、外部CDN一切なし（標準 Vanilla CSS のみ）の自己完結型 HTML/SVG 再生シアター（Mode A）として実装するための再利用可能なパターン集である。
 
 ---
 
@@ -124,7 +124,7 @@ function escapeHtml(str) {
  */
 function renderCodePane(codeSpec, motionT, cueT) {
   if (!codeSpec || !codeSpec.lines?.length) {
-    return `<div class="text-xs text-[var(--muted-foreground)] p-3">このビートは全体構成マップに焦点を当てています。</div>`;
+    return `<div class="code-empty">このビートは全体構成マップに焦点を当てています。</div>`;
   }
 
   // 安全ガード：最大12行を超えないよう制限
@@ -133,47 +133,42 @@ function renderCodePane(codeSpec, motionT, cueT) {
   const rowsHtml = lines.map((line) => {
     const keyVal = line.data_key ?? line.dataKey;
     const keyAttr = keyVal ? `data-key="${keyVal}"` : '';
-    let borderClass = 'border-transparent';
-    let bgClass = '';
+    let modClass = 'code-line--context';
     let opacity = 1;
     let extraStyle = '';
 
     if (line.state === 'context') {
       opacity = 1 - 0.62 * cueT; // 非注目文脈行を 0.38 へ後退
     } else if (line.state === 'removed') {
-      borderClass = 'border-rose-500';
-      bgClass = 'bg-rose-500/10';
+      modClass = 'code-line--removed';
       // Phase C が進むにつれて薄い残像＋取り消し線へ退く（Trace保持）
       opacity = 1 - 0.65 * motionT;
       if (motionT > 0.5) extraStyle = 'text-decoration: line-through;';
     } else if (line.state === 'added') {
-      borderClass = 'border-emerald-500';
-      bgClass = 'bg-emerald-500/15';
+      modClass = 'code-line--added';
       opacity = 0.25 + 0.75 * motionT;
     } else if (line.state === 'risk') {
-      borderClass = 'border-amber-500';
-      bgClass = 'bg-amber-500/15';
+      modClass = 'code-line--risk';
       opacity = 0.3 + 0.7 * motionT;
     } else if (line.state === 'focus') {
-      borderClass = 'border-sky-500';
-      bgClass = 'bg-sky-500/15';
+      modClass = 'code-line--focus';
     }
 
     return `
-      <div ${keyAttr} class="flex items-start gap-2 px-2 py-0.5 border-l-2 ${borderClass} ${bgClass} font-mono text-xs leading-5 transition-opacity" style="opacity:${opacity.toFixed(2)};${extraStyle}">
-        <span class="select-none text-[var(--muted-foreground)] w-7 text-right shrink-0">${line.num}</span>
-        <code class="whitespace-pre overflow-x-auto">${escapeHtml(line.text)}</code>
+      <div ${keyAttr} class="code-line ${modClass}" style="opacity:${opacity.toFixed(2)};${extraStyle}">
+        <span class="code-num">${line.num}</span>
+        <code class="code-text">${escapeHtml(line.text)}</code>
       </div>
     `;
   }).join('');
 
   const lineRange = codeSpec.line_range ?? codeSpec.lineRange ?? '';
   return `
-    <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-[var(--border)] bg-[var(--secondary)]/50 text-xs">
-      <span class="font-mono font-semibold truncate">${escapeHtml(codeSpec.file)}</span>
-      <span class="font-mono px-1.5 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] shrink-0">${escapeHtml(lineRange)}</span>
+    <div class="code-header">
+      <span class="code-file">${escapeHtml(codeSpec.file)}</span>
+      <span class="code-range">${escapeHtml(lineRange)}</span>
     </div>
-    <div class="py-1.5 overflow-x-auto">${rowsHtml}</div>
+    <div class="code-body">${rowsHtml}</div>
   `;
 }
 
@@ -182,12 +177,12 @@ function renderCodePane(codeSpec, motionT, cueT) {
  */
 function renderSplitCodePanes(codeStates, motionT, cueT) {
   if (!Array.isArray(codeStates) || codeStates.length < 2) {
-    return renderCodePane(codeStates?.[0], motionT, cueT);
+    return `<div class="code-pane">${renderCodePane(codeStates?.[0], motionT, cueT)}</div>`;
   }
   return `
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      <div class="border border-[var(--border)] rounded-lg overflow-hidden">${renderCodePane(codeStates[0], motionT, cueT)}</div>
-      <div class="border border-[var(--border)] rounded-lg overflow-hidden">${renderCodePane(codeStates[1], motionT, cueT)}</div>
+    <div class="code-split-grid">
+      <div class="code-pane">${renderCodePane(codeStates[0], motionT, cueT)}</div>
+      <div class="code-pane">${renderCodePane(codeStates[1], motionT, cueT)}</div>
     </div>
   `;
 }
@@ -255,9 +250,9 @@ window.addEventListener('keydown', (e) => {
 
 ---
 
-## 5. `generative_ui` 準拠スタンドアロン・ベース HTML テンプレート
+## 5. マルチ環境対応 Vanilla CSS スタンドアロン・ベース HTML テンプレート
 
-- `:root` に独自色フォールバックを書かず、`var(--background)`, `var(--card)`, `var(--foreground)`, `var(--muted-foreground)`, `var(--border)`, `var(--primary)`, `var(--secondary)` を使用する。
+- Claude Artifacts・Claude Code（ローカルHTML）・一般ブラウザ・Antigravity の全環境で外部CDNなしに動作するよう、`--ui-*` エイリアス変数でホスト注入変数（`--background`, `--card`, `--foreground`, `--muted-foreground`, `--border`, `--primary`, `--secondary`）を優先継承しつつ、未定義環境では `color-scheme: light dark` + `light-dark(...)` で自動適応する（ホスト変数を上書きしないよう `--background` / `--card` 等自体は `:root` に再定義しない）。
 - `prefers-reduced-motion: reduce` を初回自動検知しつつ、操作バー上の「動きを軽減」トグルボタンでも手動切替できるようにする。
 
 ```html
@@ -267,17 +262,99 @@ window.addEventListener('keydown', (e) => {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PR Walkthrough Animation</title>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
+    :root {
+      color-scheme: light dark;
+      --ui-bg: var(--background, light-dark(#f8fafc, #09090b));
+      --ui-surface: var(--card, light-dark(#ffffff, #18181b));
+      --ui-surface-2: var(--secondary, light-dark(#f1f5f9, #27272a));
+      --ui-fg: var(--foreground, light-dark(#0f172a, #f4f4f5));
+      --ui-muted: var(--muted-foreground, light-dark(#64748b, #a1a1aa));
+      --ui-border: var(--border, light-dark(#cbd5e1, #3f3f46));
+      --ui-primary: var(--primary, light-dark(#2563eb, #3b82f6));
+      --ui-primary-fg: var(--primary-foreground, #ffffff);
+      --ui-added-accent: light-dark(#10b981, #34d399);
+      --ui-added-bg: light-dark(rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.16));
+      --ui-removed-accent: light-dark(#e11d48, #fb7185);
+      --ui-removed-bg: light-dark(rgba(244, 63, 94, 0.10), rgba(244, 63, 94, 0.14));
+      --ui-risk-accent: light-dark(#d97706, #fbbf24);
+      --ui-risk-bg: light-dark(rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.16));
+      --ui-focus-accent: light-dark(#0284c7, #38bdf8);
+      --ui-focus-bg: light-dark(rgba(14, 165, 233, 0.12), rgba(56, 189, 248, 0.16));
+    }
+    html.light { color-scheme: light; }
+    html.dark { color-scheme: dark; }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--ui-bg);
+      color: var(--ui-fg);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .pr-shell {
+      max-width: 64rem;
+      margin: 0 auto;
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .pr-main-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    @media (min-width: 900px) {
+      .pr-main-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+    }
+
+    .code-split-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    @media (min-width: 768px) {
+      .code-split-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .code-pane { border: 1px solid var(--ui-border); border-radius: 8px; overflow: hidden; background: var(--ui-surface); }
+    .code-empty { font-size: 0.75rem; color: var(--ui-muted); padding: 12px; }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 6px 10px; border-bottom: 1px solid var(--ui-border);
+      background: color-mix(in srgb, var(--ui-surface-2) 55%, transparent);
+      font-size: 0.75rem;
+    }
+    .code-file { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .code-range {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 2px 6px; border-radius: 4px; background: var(--ui-surface);
+      border: 1px solid var(--ui-border); flex-shrink: 0;
+    }
+    .code-body { padding: 6px 0; overflow-x: auto; }
+    .code-line {
+      display: flex; align-items: flex-start; gap: 8px; padding: 2px 8px;
+      border-left: 2px solid transparent;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; line-height: 1.25rem;
+      transition: opacity 0.15s ease;
+    }
+    .code-line--removed { border-left-color: var(--ui-removed-accent); background: var(--ui-removed-bg); }
+    .code-line--added { border-left-color: var(--ui-added-accent); background: var(--ui-added-bg); }
+    .code-line--risk { border-left-color: var(--ui-risk-accent); background: var(--ui-risk-bg); }
+    .code-line--focus { border-left-color: var(--ui-focus-accent); background: var(--ui-focus-bg); }
+    .code-num { user-select: none; color: var(--ui-muted); width: 1.75rem; text-align: right; flex-shrink: 0; }
+    .code-text { white-space: pre; overflow-x: auto; }
+
     [data-key] { transition: opacity 0.15s ease, filter 0.15s ease; }
     body.is-highlighting [data-key]:not(.is-active-key) { opacity: 0.22 !important; }
     body.is-highlighting [data-key].is-active-key { filter: drop-shadow(0 0 5px currentColor); opacity: 1 !important; }
   </style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased p-4">
-  <div class="max-w-5xl mx-auto bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm space-y-3">
+<body>
+  <div class="pr-shell">
     <!-- 1. ヘッダー + 5幕ナビゲーションタブ -->
-    <!-- 2. 2ペイン本体 (grid-cols-1 lg:grid-cols-12: 左 col-span-7 SVGフロー / 右 col-span-5 抜粋コード) -->
+    <!-- 2. 2ペイン本体 (.pr-main-grid: 左 SVGフロー / 右 抜粋コード) -->
     <!-- 3. 固定キャプション領域 (最大2行・高さ固定でレイアウトシフト防止) -->
     <!-- 4. シアター操作バー (Play/Pause, ◀戻す, 再再生, 進む▶, シークバー, 速度0.5x-2x, 手動ステップ, 動きを軽減) -->
   </div>

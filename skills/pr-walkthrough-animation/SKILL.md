@@ -11,15 +11,17 @@ description: >-
 Git の Pull Request・ブランチ差分・未コミット変更を自律解析し、**「生 diff の丸映し」を排して、変更理由（Why）・構造変化・核心コード・破壊リスク／類似箇所への波及を短時間で頭に入れる解説アニメーション**を設計・生成するスキル。
 
 - **出力モード選択（Mode A デフォルト / Mode B 拡張）**：
-  - **Mode A（無音 HTML/SVG 再生シアター・デフォルト）**: チャット内プレビューやブラウザ即時確認向け。`generative_ui` 環境で外部CDNなし（許可 Tailwind のみ）で即動作。
+  - **Mode A（無音 HTML/SVG 再生シアター・デフォルト）**: チャット内プレビュー（Claude Artifacts / Antigravity 等）やローカルブラウザ即時確認向け。外部CDN一切なしの Vanilla HTML/SVG/CSS/JS で即動作。
   - **Mode B（音声ナレーション付き MP4/WebM＋WebVTT 動画）**: ユーザーが「MP4」「動画ファイル」「音声付き」「Remotion」「GitHub PR に貼る動画」等を明示した際に選択。Audio-First で確定フレームをレンダリングする。
 - **2層分離アーキテクチャ**：**Layer 1（PR解析・意味的クラスタリング・4ブロック中間ストーリーボード JSON）** を共通土台とし、**Layer 2-A（無音シアター）** または **Layer 2-B（Audio-First 動画）** を独立出力する。
 
 > [!IMPORTANT]
-> **Mode A（Antigravity `generative_ui`）出力時の必須制約**
-> 1. **外部CDN禁止（CSP制約）**: 許可された Tailwind スクリプト（`https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js`）以外は読み込めない。すべてゼロ依存の HTML/SVG/CSS/JS で実装する。
-> 2. **テーマ変数と視認性**: `bg-[var(--card)]`, `text-[var(--foreground)]`, `text-[var(--muted-foreground)]`, `border-[var(--border)]`, `--primary` 等を使い、`:root` への独自色フォールバックやハードコード色を避ける。最小フォントは `12px`（`text-xs`）以上。
-> 3. **配置**: 原則スタンドアロンアーティファクト（`bg-[var(--background)]`, `UserFacing: true`）として出力する。超小型PRで高さ `<= 450px` に収まる場合のみ `<agent-embed>`（`h-screen`/`100vh` 禁止）を検討する。
+> **Mode A（HTML/SVG シアター）出力時のマルチ環境必須制約**
+> 1. **完全ゼロ依存・外部CDN禁止（CSP互換）**: Tailwind CDN を含む外部 `<script>` / `<link>` を一切読み込まず、単一 `.html` 内の**標準 `<style>`（Vanilla CSS）＋インライン SVG/JS** だけで実装する（Claude Artifacts・Claude Code・Antigravity の全環境でそのまま動作する）。
+> 2. **セマンティックテーマ変数と視認性**: `--ui-*` エイリアス変数（ホスト注入の `--background`, `--card`, `--foreground`, `--muted-foreground`, `--border`, `--primary`, `--secondary` があれば優先継承し、未定義時は `color-scheme: light dark` + `light-dark(...)` で自動適応）を使い、ハードコード色やホスト変数名（`--card` 等）自体の `:root` 再定義を避ける。最小フォントサイズは `12px`（`0.75rem`）以上。
+> 3. **ホスト環境別の配置**:
+>    - **Claude 環境（Artifacts / ローカル HTML）・一般ブラウザ**: 単一自己完結 HTML として出力する（フレーム高さ崩壊を防ぐためトップレベルの `100vh` / `height: 100%` 依存を避ける）。
+>    - **Antigravity 環境（`generative_ui` 利用可能時）**: 原則スタンドアロンアーティファクト（`UserFacing: true`）として出力し、超小型PRで高さ `<= 450px` に収まる場合のみ `<agent-embed>` を検討する。
 
 ---
 
@@ -104,5 +106,5 @@ Git の Pull Request・ブランチ差分・未コミット変更を自律解析
 
 - **[references/pr-analysis-and-storyboard.md](./references/pr-analysis-and-storyboard.md)**: 【Layer 1 共通】一次文献エビデンスマップ＆留保、PR/ブランチ解析、ノイズ除外・裏取り、クラスタリング手順、PRタイプ別比率表、4ブロック中間ストーリーボード JSON 仕様。
 - **[references/code-visual-patterns.md](./references/code-visual-patterns.md)**: 【Layer 2 共通】6フェーズ別ビジュアル語彙・1080p画素可読性基準、Focus+Context・Magic Move・分割比較、PRタイプ別演出表、10大アンチパターン（Gotchas #1–#10）。
-- **[references/theater-engine-patterns.md](./references/theater-engine-patterns.md)**: 【Mode A 専用】無音5フェーズ決定論エンジン、2ペイン／分割コード表示、Progressive Path＆残像、`generative_ui` テンプレート。
+- **[references/theater-engine-patterns.md](./references/theater-engine-patterns.md)**: 【Mode A 専用】無音5フェーズ決定論エンジン、2ペイン／分割コード表示、Progressive Path＆残像、マルチ環境対応 Vanilla CSS ベーステンプレート。
 - **[references/narrated-video-pipeline.md](./references/narrated-video-pipeline.md)**: 【Mode B 専用】CTML原則反転、TTS脚本・話速・SSML規約、動画生成4スタック選定（Remotion / Playwright+FFmpeg 等）、ElevenLabs/タイムスタンプ付きTTS・WhisperX Audio-First同期、H.264/9.5MBエンコード自動化・視覚検査ガイド。

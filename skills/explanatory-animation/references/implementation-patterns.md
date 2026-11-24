@@ -1,6 +1,6 @@
 # 解説アニメーション 実装パターン集（HTML / SVG / Canvas / CSS / JS）
 
-本ドキュメントは、無音Web環境におけるマイクロペーシング・決定論的ビート制御・シアターUI・アクセシビリティ・`generative_ui` 連携を満たすための、**ゼロ依存（外部CDN不要）**で再利用可能な実装パターンを提供する。
+本ドキュメントは、無音Web環境におけるマイクロペーシング・決定論的ビート制御・シアターUI・アクセシビリティ・マルチ環境（Claude Artifacts / ローカルブラウザ / Antigravity）互換のテーマ連携を満たすための、**ゼロ依存（外部CDN不要・Vanilla CSS）**で再利用可能な実装パターンを提供する。
 
 ---
 
@@ -137,35 +137,35 @@ function evaluateTimeline(timeline, tMs, reducedMotion = false) {
 **目的**: 1ビート戻し/送り・現在ビート再再生・幕＆ビート境界付きシークバー・速度切替（`0.5x–2.0x`）・自動/手動ステップ切替を標準搭載する（Hundhausen et al., 2002; Spanjers et al., 2011）。
 
 ```html
-<!-- シアターUIコントロールバー（Tailwind + generative_ui セマンティック変数準拠） -->
-<div class="space-y-2 pt-2 border-t border-[var(--card-border)] text-xs">
+<!-- シアターUIコントロールバー（Vanilla CSS + セマンティック変数準拠） -->
+<div class="theater-controls">
   <!-- ビート構造化シークバー（幕ラベル＋ビート境界マーカー） -->
-  <div id="scrubber-track" class="relative h-5 flex items-center cursor-pointer select-none" role="slider" aria-label="タイムラインシーク">
-    <div class="w-full h-1.5 rounded-full bg-[var(--border)] overflow-hidden relative">
-      <div id="scrubber-fill" class="h-full bg-[var(--primary)]" style="width: 0%"></div>
+  <div id="scrubber-track" class="scrubber-track" role="slider" aria-label="タイムラインシーク">
+    <div class="scrubber-rail">
+      <div id="scrubber-fill" class="scrubber-fill" style="width: 0%"></div>
     </div>
-    <div id="scrubber-markers" class="absolute inset-0 pointer-events-none"></div>
+    <div id="scrubber-markers" class="scrubber-markers"></div>
   </div>
 
   <!-- 操作ボタン群 -->
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <div class="flex items-center gap-1.5">
-      <button id="btn-prev" type="button" title="1ビート戻る (←)" class="px-2 py-1 rounded border border-[var(--border)] hover:bg-[var(--secondary)]">◀ 前ビート</button>
-      <button id="btn-replay" type="button" title="このビートを最初から (R)" class="px-2 py-1 rounded border border-[var(--border)] hover:bg-[var(--secondary)]">↺ 再再生</button>
-      <button id="btn-play" type="button" title="再生 / 一時停止 (Space)" class="px-3 py-1 rounded bg-[var(--primary)] text-[var(--primary-foreground)] font-medium">▶ 再生</button>
-      <button id="btn-next" type="button" title="1ビート進む (→)" class="px-2 py-1 rounded border border-[var(--border)] hover:bg-[var(--secondary)]">次ビート ▶</button>
-      <span id="beat-readout" class="ml-1 font-mono tabular-nums text-[var(--muted-foreground)]">1 / 6 [E]</span>
+  <div class="theater-bar">
+    <div class="theater-group">
+      <button id="btn-prev" type="button" title="1ビート戻る (←)" class="theater-btn">◀ 前ビート</button>
+      <button id="btn-replay" type="button" title="このビートを最初から (R)" class="theater-btn">↺ 再再生</button>
+      <button id="btn-play" type="button" title="再生 / 一時停止 (Space)" class="theater-btn theater-btn--primary">▶ 再生</button>
+      <button id="btn-next" type="button" title="1ビート進む (→)" class="theater-btn">次ビート ▶</button>
+      <span id="beat-readout" class="theater-readout">1 / 6 [E]</span>
     </div>
 
-    <div class="flex items-center gap-1.5">
-      <select id="speed-select" aria-label="再生速度" class="px-1.5 py-1 rounded border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]">
+    <div class="theater-group">
+      <select id="speed-select" aria-label="再生速度" class="theater-select">
         <option value="0.5">0.5x</option>
         <option value="1" selected>1.0x</option>
         <option value="1.5">1.5x</option>
         <option value="2">2.0x</option>
       </select>
-      <button id="btn-step-mode" type="button" class="px-2 py-1 rounded border border-[var(--border)]">モード: 連続</button>
-      <button id="btn-reduced" type="button" aria-pressed="false" class="px-2 py-1 rounded border border-[var(--border)]">モーション軽減: OFF</button>
+      <button id="btn-step-mode" type="button" class="theater-btn">モード: 連続</button>
+      <button id="btn-reduced" type="button" aria-pressed="false" class="theater-btn">モーション軽減: OFF</button>
     </div>
   </div>
 </div>
@@ -178,7 +178,7 @@ function attachTheaterControls(timeline, state, onSeek, onTogglePlay, onRender) 
     if (i === 0) return;
     const leftPct = (b.startMs / timeline.totalMs) * 100;
     const tick = document.createElement('span');
-    tick.className = 'absolute top-1 bottom-1 w-px bg-[var(--foreground)] opacity-35';
+    tick.className = 'scrubber-tick';
     tick.style.left = `${leftPct}%`;
     tick.title = `Beat ${i + 1} (${b.act})`;
     markersEl.appendChild(tick);
@@ -277,22 +277,22 @@ function handleCheckpointGate(frame, state, onPause, showPromptUI) {
 **目的**: 外部静止矢印の貼付に頼らず因果パスに沿って色が伝播する動的キュー（Boucheix & Lowe, 2010）を実装し、さらに比較用の直前状態残像（`opacity: 0.18`）を残す（IEEE TVCG 2025）。
 
 ```html
-<svg id="stage" viewBox="0 0 560 220" class="w-full h-auto">
+<svg id="stage" viewBox="0 0 560 220" class="stage-svg">
   <!-- Layer 1: 比較用の残像・履歴レイヤー（直前状態シルエットを薄く保持） -->
-  <g id="layer-history" opacity="0.18" class="text-[var(--muted-foreground)]"></g>
+  <g id="layer-history" opacity="0.18" style="color: var(--ui-muted)"></g>
 
   <!-- Layer 2: 非注目コンテキスト（Phase B で dimOpacity へ減光） -->
-  <g id="layer-context" class="text-[var(--muted-foreground)]"></g>
+  <g id="layer-context" style="color: var(--ui-muted)"></g>
 
   <!-- Layer 3: 因果パス（下地レール ＋ Progressive Path 発光オーバーレイ） -->
   <path id="flow-rail" d="M 80 110 C 200 30, 360 190, 480 110"
-        fill="none" stroke="var(--border)" stroke-width="4" stroke-linecap="round" />
+        fill="none" stroke="var(--ui-border)" stroke-width="4" stroke-linecap="round" />
   <path id="flow-active" d="M 80 110 C 200 30, 360 190, 480 110"
-        fill="none" stroke="var(--chart-1)" stroke-width="5" stroke-linecap="round" />
+        fill="none" stroke="var(--ui-c1)" stroke-width="5" stroke-linecap="round" />
 
   <!-- Layer 4: 主役ノード（セマンティックカラーでキャプション・数式と統一） -->
-  <circle id="actor-a" cx="80" cy="110" r="14" fill="var(--chart-1)" />
-  <circle id="actor-b" cx="480" cy="110" r="14" fill="var(--chart-2)" />
+  <circle id="actor-a" cx="80" cy="110" r="14" fill="var(--ui-c1)" />
+  <circle id="actor-b" cx="480" cy="110" r="14" fill="var(--ui-c2)" />
 </svg>
 
 <script>
@@ -420,27 +420,84 @@ function initReducedMotionController(state, toggleBtn, onChange) {
 
 ---
 
-## 7. `generative_ui` 併用テンプレート＆ Canvas `themechange` 再描画
+## 7. マルチ環境対応 Vanilla CSS ベーステンプレート＆ Canvas ライブテーマ再描画
 
-**目的**: Antigravity の `generative_ui` 規約（CSP 準拠、テーマ変数、`<= 450px` インライン高さ予算、`themechange` イベントでの状態保持再描画）に適合する最小HTML骨格。
+**目的**: Claude Artifacts、Claude Code（ローカルHTML）、スタンドアロンブラウザ、および Antigravity（`generative_ui`）の全環境で外部CDNなしにそのまま動作し、ライト/ダークのライブテーマ切替でも状態を保ったまま再描画する最小HTML骨格（Antigravity の `<agent-embed>` インライン埋め込み時は `<body class="is-inline">` で `background: transparent; padding: 0`、高さ `<= 450px` 予算に適合）。
 
 ```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      color-scheme: light dark;
+      /* ホスト注入トークン（Antigravity等）があれば優先継承し、未定義環境（Claude Artifacts / 単体ブラウザ）では light-dark() で自動適応。
+         ※ホスト変数を上書きしないよう --background / --card 等自体は :root に再定義しない */
+      --ui-bg: var(--background, light-dark(#f8fafc, #09090b));
+      --ui-surface: var(--card, light-dark(#ffffff, #18181b));
+      --ui-surface-2: var(--secondary, light-dark(#f1f5f9, #27272a));
+      --ui-fg: var(--foreground, light-dark(#0f172a, #f4f4f5));
+      --ui-muted: var(--muted-foreground, light-dark(#64748b, #a1a1aa));
+      --ui-border: var(--border, light-dark(#cbd5e1, #3f3f46));
+      --ui-card-border: var(--card-border, var(--ui-border));
+      --ui-primary: var(--primary, light-dark(#2563eb, #3b82f6));
+      --ui-primary-fg: var(--primary-foreground, #ffffff);
+      --ui-c1: var(--chart-1, light-dark(#2563eb, #60a5fa));
+      --ui-c2: var(--chart-2, light-dark(#059669, #34d399));
+      --ui-c3: var(--chart-3, light-dark(#d97706, #fbbf24));
+      --ui-c4: var(--chart-4, light-dark(#e11d48, #fb7185));
+    }
+    html.light { color-scheme: light; }
+    html.dark { color-scheme: dark; }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--ui-bg);
+      color: var(--ui-fg);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Antigravity インライン埋め込み時は <body class="is-inline"> で背景透過・余白ゼロ */
+    body.is-inline { background: transparent; padding: 0; }
+
+    .theater-shell { max-width: 48rem; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+    .stage-card { border-radius: 8px; border: 1px solid var(--ui-card-border); background: var(--ui-surface); padding: 12px; }
+    .stage-canvas, .stage-svg { width: 100%; height: auto; display: block; }
+    .caption-box { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ui-card-border); min-height: 2.75rem; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .caption-text { margin: 0; font-size: 0.875rem; font-weight: 500; line-height: 1.375; color: var(--ui-fg); }
+
+    /* Section 2 シアターUIコントロールバー用スタイル */
+    .theater-controls { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid var(--ui-card-border); font-size: 0.75rem; }
+    .scrubber-track { position: relative; height: 20px; display: flex; align-items: center; cursor: pointer; user-select: none; }
+    .scrubber-rail { position: relative; width: 100%; height: 6px; border-radius: 9999px; background: var(--ui-border); overflow: hidden; }
+    .scrubber-fill { height: 100%; background: var(--ui-primary); }
+    .scrubber-markers { position: absolute; inset: 0; pointer-events: none; }
+    .scrubber-tick { position: absolute; top: 4px; bottom: 4px; width: 1px; background: var(--ui-fg); opacity: 0.35; }
+    .theater-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+    .theater-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .theater-btn, .theater-select {
+      padding: 4px 8px; border-radius: 6px; border: 1px solid var(--ui-border);
+      background: var(--ui-surface); color: var(--ui-fg); font-size: inherit; cursor: pointer;
+    }
+    .theater-btn:hover { background: var(--ui-surface-2); }
+    .theater-btn--primary { padding: 4px 12px; background: var(--ui-primary); color: var(--ui-primary-fg); border-color: transparent; font-weight: 500; }
+    .theater-btn--primary:hover { filter: brightness(1.08); background: var(--ui-primary); }
+    .theater-readout { margin-left: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; color: var(--ui-muted); }
+  </style>
 </head>
-<!-- インライン埋め込み時は bg-transparent + p-0 m-0 を厳守（h-screen / 100vh 禁止） -->
-<body class="bg-transparent text-[var(--foreground)] antialiased p-0 m-0">
-  <div class="py-2 space-y-2.5 max-w-3xl mx-auto">
-    <!-- ステージ領域（高さ予算を 450px 以内に収める） -->
-    <div class="relative rounded-lg border border-[var(--card-border)] bg-[var(--card)] p-3">
-      <canvas id="anim-canvas" width="640" height="240" class="w-full h-auto block"></canvas>
+<body>
+  <div class="theater-shell">
+    <!-- ステージ領域（インライン埋め込み時は全体の高さ予算を 450px 以内に収める） -->
+    <div class="stage-card">
+      <canvas id="anim-canvas" width="640" height="240" class="stage-canvas"></canvas>
 
       <!-- 下部固定位置キャプション（最大2行、1行 13–16 全角文字目安） -->
-      <div class="mt-2 pt-2 border-t border-[var(--card-border)] min-h-[2.75rem] flex items-center justify-center text-center">
-        <p id="caption-text" class="text-sm font-medium leading-snug text-[var(--foreground)]"></p>
+      <div class="caption-box">
+        <p id="caption-text" class="caption-text"></p>
       </div>
     </div>
 
@@ -451,17 +508,22 @@ function initReducedMotionController(state, toggleBtn, onChange) {
     const canvas = document.getElementById('anim-canvas');
     const ctx = canvas.getContext('2d');
 
-    /** CSS セマンティックトークンを動的に解決（Canvas でのハードコード色禁止） */
+    /** ホスト変数優先 ＋ light/dark 自動判定で Canvas 描画色を解決（light-dark() 生文字列は渡さない） */
     function readThemeColors() {
-      const s = getComputedStyle(document.documentElement);
-      const get = (name, fallback) => s.getPropertyValue(name).trim() || fallback;
+      const root = document.documentElement;
+      const s = getComputedStyle(root);
+      const isDark =
+        root.classList.contains('dark') ||
+        (!root.classList.contains('light') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const get = (name, lightHex, darkHex) =>
+        s.getPropertyValue(name).trim() || (isDark ? darkHex : lightHex);
       return {
-        fg: get('--foreground', '#111827'),
-        muted: get('--muted-foreground', '#6b7280'),
-        border: get('--border', '#d1d5db'),
-        primary: get('--primary', '#2563eb'),
-        c1: get('--chart-1', '#3b82f6'),
-        c2: get('--chart-2', '#10b981'),
+        fg: get('--foreground', '#0f172a', '#f4f4f5'),
+        muted: get('--muted-foreground', '#64748b', '#a1a1aa'),
+        border: get('--border', '#cbd5e1', '#3f3f46'),
+        primary: get('--primary', '#2563eb', '#3b82f6'),
+        c1: get('--chart-1', '#2563eb', '#60a5fa'),
+        c2: get('--chart-2', '#059669', '#34d399'),
       };
     }
 
@@ -475,10 +537,12 @@ function initReducedMotionController(state, toggleBtn, onChange) {
       document.getElementById('caption-text').textContent = frame.beat.caption;
     }
 
-    // ライブテーマ切替時に再生位置・状態をリセットせず即時再描画
-    window.addEventListener('themechange', () => {
+    // ライブテーマ切替時に再生位置・状態をリセットせず即時再描画（Antigravity themechange ＋ OS prefers-color-scheme 両対応）
+    const rerenderOnThemeChange = () => {
       if (lastRenderedFrame) render(lastRenderedFrame);
-    });
+    };
+    window.addEventListener('themechange', rerenderOnThemeChange);
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', rerenderOnThemeChange);
   </script>
 </body>
 </html>

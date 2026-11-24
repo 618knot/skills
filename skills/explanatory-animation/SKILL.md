@@ -13,10 +13,12 @@ description: >-
 - **適用判定ゲート（Ploetzner et al., 2020）**：変化の過程・手続き・加減速・因果伝播そのものが学習対象である場合（$g = 0.340\text{–}0.647$、手続き知識 $d = 1.06$）にのみ本スキルを適用する。変化の特徴を学ぶ必要がない静的配置比較（$g = 0.043$）や、読者がパラメータを直接動かして仮説検証する実験室UIは、静的図解または `interactive-explanation` スキルへ委譲する。
 
 > [!IMPORTANT]
-> **Antigravity（`generative_ui`）環境で HTML/SVG/Canvas 出力する際の必須制約**
-> 1. **外部CDN禁止（CSP制約）**: 許可された Tailwind スクリプト（`https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js`）以外の外部ライブラリ（GSAP / D3 / Three.js 等）は読み込めない。タイムライン・イージング・SVGモーフィング・カメラ制御はすべて**ゼロ依存のインライン HTML/SVG/Canvas/CSS/JS**で実装する。
-> 2. **テーマ変数とライブ同期**: `bg-[var(--card)]`, `text-[var(--foreground)]`, `text-[var(--muted-foreground)]`, `--primary`, `--chart-1`〜`--chart-6` 等のセマンティックトークンを用い、`:root` への独自色フォールバックやハードコード色（`bg-slate-900`, `text-white` 等）を避ける。`<canvas>` 描画は `getComputedStyle(document.documentElement)` で色を取得し、`window.addEventListener('themechange', render)` で状態を保ったまま再描画する。
-> 3. **配置・高さ予算**: コンパクトな解説シアター（`<= 450px` 目標、`<body class="bg-transparent ... p-0 m-0">`、`h-screen`/`100vh`/`height: 100%` 禁止）はインライン埋め込み（`<agent-embed>`）。多幕ステージ・数式併置・広い幾何キャンバス等で `> 450px` を要する場合はスタンドアロンアーティファクト（`bg-[var(--background)]`）として出力する。
+> **マルチ環境互換（Claude Artifacts / Claude Code / Antigravity）HTML/SVG/Canvas 出力の必須制約**
+> 1. **完全ゼロ依存・外部CDN禁止（CSP互換）**: Tailwind CDN や外部ライブラリ（GSAP / D3 / Three.js 等）を含む外部 `<script>` / `<link>` を一切読み込まない。レイアウト・スタイリング・タイムライン・イージング・SVGモーフィング・カメラ制御はすべて単一 `.html` 内の**標準 `<style>`（Vanilla CSS）＋インライン SVG/Canvas/JS** で自己完結させる。
+> 2. **セマンティックテーマ変数とライブ同期**: ハードコード色（固定の黒背景・白文字等）を避け、`--ui-*` エイリアス変数（ホスト注入の `--background`, `--card`, `--foreground`, `--muted-foreground`, `--border`, `--primary`, `--chart-1`〜`--chart-4` があれば優先継承し、未定義環境では `color-scheme: light dark` + `light-dark(...)` で自動適応）を用いる。ホスト変数を上書きしないよう `:root` で `--background` や `--card` 自体を再定義しないこと。`<canvas>` 描画はテーマ解決ヘルパー経由で色を取得し、`prefers-color-scheme` の `change` イベントと `window` の `themechange` イベントの双方で状態を保ったまま再描画する。
+> 3. **ホスト環境別の出力・配置**:
+>    - **Claude 環境（Artifacts / ローカル HTML）・一般ブラウザ**: 単一自己完結 HTML として出力する。フレーム高さ崩壊を防ぐためトップレベルコンテナへの `100vh` / `height: 100%` 依存は避け、コンテンツ主導の高さにする。
+>    - **Antigravity 環境（`generative_ui` 利用可能時）**: コンパクトなシアター（`<= 450px` 目標、`background: transparent; margin: 0; padding: 0`）は `<agent-embed>` でインライン埋め込みし、`> 450px` を要する場合はスタンドアロンアーティファクトとして出力する。
 
 ---
 
@@ -95,4 +97,4 @@ description: >-
 
 - **[references/research-and-motion-vocabulary.md](./references/research-and-motion-vocabulary.md)**: 5領域の一次文献マスタ一覧・境界条件・演出哲学、5幕アーク（`E → I+ → P → R+`）仕様、解説意図別「モーション語彙・デザイン空間」10パターン対応表、3つの重要トレードオフ判断基準。
 - **[references/anti-patterns-and-audit.md](./references/anti-patterns-and-audit.md)**: 定量的エビデンス一覧（メタ分析効果量・CTML・知覚上限・CPS規格）、AIがやりがちな10大アンチパターン（Gotchas #1–#10）と MUST/NEVER 制約集、7項目自己監査ゲートの詳細検証基準。
-- **[references/implementation-patterns.md](./references/implementation-patterns.md)**: ゼロ依存 HTML/SVG/Canvas/CSS/JS 実装パターン集（無音CPS自動計算＋決定論的タイムラインエンジン、シアターUI＆キーボード操作、Responding予測チェックポイント、Progressive Path＆ディミング＆残像履歴、`enter/update/exit` 照合＋`viewBox`カメラワーク、`prefers-reduced-motion`フォールバック、`generative_ui` テンプレート＆`themechange`同期）。
+- **[references/implementation-patterns.md](./references/implementation-patterns.md)**: ゼロ依存 HTML/SVG/Canvas/CSS/JS 実装パターン集（無音CPS自動計算＋決定論的タイムラインエンジン、シアターUI＆キーボード操作、Responding予測チェックポイント、Progressive Path＆ディミング＆残像履歴、`enter/update/exit` 照合＋`viewBox`カメラワーク、`prefers-reduced-motion`フォールバック、マルチ環境対応 Vanilla CSS テンプレート＆ライブテーマ同期）。
