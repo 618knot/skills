@@ -105,4 +105,4 @@ Git の Pull Request・ブランチ差分・未コミット変更を自律解析
 - **[references/pr-analysis-and-storyboard.md](./references/pr-analysis-and-storyboard.md)**: 【Layer 1 共通】一次文献エビデンスマップ＆留保、PR/ブランチ解析、ノイズ除外・裏取り、クラスタリング手順、PRタイプ別比率表、4ブロック中間ストーリーボード JSON 仕様。
 - **[references/code-visual-patterns.md](./references/code-visual-patterns.md)**: 【Layer 2 共通】6フェーズ別ビジュアル語彙・1080p画素可読性基準、Focus+Context・Magic Move・分割比較、PRタイプ別演出表、10大アンチパターン（Gotchas #1–#10）。
 - **[references/theater-engine-patterns.md](./references/theater-engine-patterns.md)**: 【Mode A 専用】無音5フェーズ決定論エンジン、2ペイン／分割コード表示、Progressive Path＆残像、`generative_ui` テンプレート。
-- **[references/narrated-video-pipeline.md](./references/narrated-video-pipeline.md)**: 【Mode B 専用】CTML原則反転、TTS脚本・話速・SSML規約、動画生成4スタック選定（Remotion / Playwright+FFmpeg 等）、ElevenLabs/VOICEVOX/WhisperX Audio-First同期、H.264/9.5MBエンコード自動化・視覚検査ガイド。
+- **[references/narrated-video-pipeline.md](./references/narrated-video-pipeline.md)**: 【Mode B 専用】CTML原則反転、TTS脚本・話速・SSML規約、動画生成4スタック選定（Remotion / Playwright+FFmpeg 等）、ElevenLabs/タイムスタンプ付きTTS・WhisperX Audio-First同期、H.264/9.5MBエンコード自動化・視覚検査ガイド。

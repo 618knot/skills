@@ -63,12 +63,10 @@ Craig & Schroeder (2017, 2019) が実証した通り、現代的高品質 TTS �
 ## 4. Audio-First タイムライン実装＆タイムスタンプ取得仕様
 
 ### 4.1 エンジン別タイムスタンプ取得（ビート単位の先生成）
-1. **ElevenLabs（英語・多言語クラウド API）**:
-   - `POST /v1/text-to-speech/{voice_id}/with-timestamps` を呼び出し、`audio_base64` と同時に返る `alignment`（または `normalized_alignment`）の `characters`, `character_start_times_seconds`, `character_end_times_seconds` から強調語の開始時刻 `t_word` を抽出する。
-2. **VOICEVOX Engine（日本語ローカル / OSS）**:
-   - `POST /audio_query` のレスポンスから `prePhonemeLength` と `accent_phrases[].moras[]`（`consonant_length` ＋ `vowel_length`）を取得し、`speedScale` で除算して累積加算することで、合成前にモーラ単位の開始・終了秒数を決定論的に算出できる。
-3. **タイムスタンプ非対応 TTS（AivisSpeech-Engine 等の場合）**:
-   - `consonant_length` / `vowel_length` 未対応エンジンや単なる音声ファイル出力のみの TTS を使う場合は、後段に **WhisperX** による強制アライメント（Forced Alignment）を挟むフォールバック経路を実行する。
+1. **タイムスタンプ対応 TTS API（例：ElevenLabs 等）**:
+   - ElevenLabs の `POST /v1/text-to-speech/{voice_id}/with-timestamps` 等を呼び出し、`audio_base64` と同時に返る `alignment`（または `normalized_alignment`）の `characters`, `character_start_times_seconds`, `character_end_times_seconds` から強調語の開始時刻 `t_word` を抽出する。
+2. **タイムスタンプ非対応 TTS（標準音声ファイル出力のみのエンジンや macOS `say` 等）**:
+   - ワード／文字タイムスタンプを返さない TTS を使う場合は、後段に **WhisperX** による強制アライメント（Forced Alignment）を挟んで強調時刻を特定するか、またはビート総尺ベースでAudio-First同期するフォールバック経路を実行する。
 
 ### 4.2 Remotion `calculateMetadata` による決定論フレーム計算＆視覚先行同期
 ```typescript
