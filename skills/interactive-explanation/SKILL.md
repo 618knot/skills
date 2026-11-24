@@ -3,7 +3,7 @@ name: interactive-explanation
 description: >-
   Design and build hands-on interactive diagrams, Explorable Explanations, and parameter-exploration laboratories grounded in HCI, Information Visualization, and Cognitive Load Theory (Bret Victor, Ben Shneiderman, Edward Tufte, Barbara Tversky, John Sweller, Nicky Case, Bartosz Ciechanowski, Amit Patel).
   Use when the user wants a reader-driven sandbox, static-first small multiples, direct manipulation handles, sliders/scrubbable numbers, or interactive simulations to test hypotheses and explore multi-variable trade-offs or edge cases (e.g., "いじって理解できる図解", "パラメータを変えて試せるシミュレータ", "Explorable Explanation").
-  Do NOT use when the user asks for time-based narrative motion, choreographed playback/step-through animations, 3Blue1Brown/Manim-style visual storytelling, or Data Videos; use explanatory-animation instead.
+  Do NOT use when the user asks for time-based narrative motion, choreographed playback/step-through animations, 3Blue1Brown/Manim-style visual storytelling, or Data Videos; use explanatory-animation instead. For compact inline animated architecture, flow, sequence, or state diagrams embedded as document or chat illustrations (with subtle signal flow and optional 2-3 scenario pills rather than parameter-exploration sandboxes), use animated-diagram instead.
 ---
 
 # Interactive Explanation & Diagram Design Skill

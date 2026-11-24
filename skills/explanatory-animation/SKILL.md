@@ -3,14 +3,14 @@ name: explanatory-animation
 description: >-
   Design and build time-based explanatory animations, choreographed visual storytelling, and playback theater Web UIs (HTML/SVG/Canvas/CSS/JS) grounded in instructional animation cognitive science, Data Video design spaces, motion perception, and multimedia learning theory (Lowe & Boucheix APM, Shi et al., Amini et al., Heer & Robertson, Mayer CTML, Grant Sanderson / 3Blue1Brown).
   Use whenever the user asks to explain a complex concept, algorithm, math intuition, data flow, or system mechanism through timeline-driven motion, morphing, camera work, step-by-step playback, micro-pacing, Data Videos, or 3Blue1Brown/Manim-style animated explainers (e.g., "アニメーションで解説して", "動きで直観的に見せて", "3Blue1Brown風", "モーショングラフィックスで説明").
-  Do NOT use when the user wants a hands-on parameter-exploration lab, direct-manipulation sandbox, or static-first small multiples comparison without narrative playback; use interactive-explanation instead. For explaining Git Pull Requests, branch diffs, or code changes as a walkthrough animation, use pr-walkthrough-animation instead.
+  Do NOT use when the user wants a hands-on parameter-exploration lab, direct-manipulation sandbox, or static-first small multiples comparison without narrative playback; use interactive-explanation instead. For explaining Git Pull Requests, branch diffs, or code changes as a walkthrough animation, use pr-walkthrough-animation instead. For compact inline animated architecture, flow, sequence, or state diagrams embedded as document or chat illustrations without video-player chrome or subtitle dwell, use animated-diagram instead.
 ---
 
 # Explanatory Animation & Motion Storytelling Skill
 
 時間軸に沿った振付（Choreography）・連続変形（Morphing）・カメラワーク・マイクロペーシングによって概念の成り立ちや因果の流れを直観的に伝達する、**解説アニメーション／再生シアターWeb UI**を自律設計・実装するための実行ルールブック。
 
-- **適用判定ゲート（Ploetzner et al., 2020）**：変化の過程・手続き・加減速・因果伝播そのものが学習対象である場合（$g = 0.340\text{–}0.647$、手続き知識 $d = 1.06$）にのみ本スキルを適用する。変化の特徴を学ぶ必要がない静的配置比較（$g = 0.043$）や、読者がパラメータを直接動かして仮説検証する実験室UIは、静的図解または `interactive-explanation` スキルへ委譲する。
+- **適用判定ゲート（Ploetzner et al., 2020）**：変化の過程・手続き・加減速・因果伝播そのものが学習対象である場合（$g = 0.340\text{–}0.647$、手続き知識 $d = 1.06$）にのみ本スキルを適用する。変化の特徴を学ぶ必要がない静的配置比較（$g = 0.043$）や、読者がパラメータを直接動かして仮説検証する実験室UIは、静的図解または `interactive-explanation` スキルへ委譲する。ドキュメント挿絵型のコンパクトなアニメーション構成図・フロー図には `animated-diagram` スキルを使用する。
 
 > [!IMPORTANT]
 > **マルチ環境互換（Claude Artifacts / Claude Code / Antigravity）HTML/SVG/Canvas 出力の必須制約**
